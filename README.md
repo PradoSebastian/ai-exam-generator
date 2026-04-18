@@ -1,4 +1,4 @@
-# Examenes_Santy
+# AI Exam Generator
 
 Short README with steps to prepare exam materials and export them to PDF.
 
