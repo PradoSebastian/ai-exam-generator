@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.INFO)
 GEMINI_MODEL=os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 MODEL_TEMPERATURE=float(os.getenv("MODEL_TEMPERATURE", 0.7))
 INCLUDE_ANSWERS=os.getenv("INCLUDE_ANSWERS", "true").lower() == "true"
+IMAGE_ARTIFACTS_KEY="image_artifacts"
 
 FILES_PATH=os.getenv("FILES_PATH", "files")
 

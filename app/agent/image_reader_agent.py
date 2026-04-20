@@ -1,9 +1,10 @@
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.llm_agent import LlmAgent
-from google.adk.tools.tool_context import ToolContext
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events import Event
 from google.genai import types
 
 from app.agent.prompt.image_reader_prompt import IMAGE_READER_PROMPT
@@ -13,6 +14,8 @@ from app.constants.agent_constants import (
     GEMINI_MODEL
 )
 from app.util.md import MarkdownUtil
+from app.util.artifact import ArtifactUtil
+from app.util.event import EventUtil
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +38,24 @@ class ImageReaderAgent:
             output_key=IMAGE_READER_OUTPUT_KEY,
             after_agent_callback = self.__class__.save_markdown_after_agent
         )
-        
 
-    def get_agent(self) -> LlmAgent:
-        return self.image_reader_llm_agent
+    def _initialize_image_files(
+        self, 
+        folder: str, 
+        image_files: list[tuple[str, str]],
+        ctx: InvocationContext
+    ) -> Event | None:
+        """Initializes the image files."""
+        if not image_files:
+            logger.error(f"No image files found in {folder}")
+            return EventUtil.create_error_event(f"No image files found in {folder}")
+
+        if not ArtifactUtil.save_artifacts(image_files, ctx):
+            logger.error(f"Error saving artifacts: {image_files}")
+            return EventUtil.create_error_event(f"Error saving artifacts: {image_files}")
+        
+    def _clean_image_files(self, ctx: InvocationContext) -> None:
+        ArtifactUtil.clean_artifacts(ctx)
 
     @staticmethod
     def save_markdown_after_agent(callback_context: CallbackContext) -> Optional[types.Content]:
@@ -48,6 +65,9 @@ class ImageReaderAgent:
             MarkdownUtil.create_markdown_file(text=generated_markdown, file_name=IMAGE_READER_OUTPUT_FILE_NAME)
         
         return None
+
+    def get_agent(self) -> LlmAgent:
+        return self.image_reader_llm_agent
 
     
 image_reader_agent = ImageReaderAgent()

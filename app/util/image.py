@@ -4,6 +4,9 @@ import os
 import google.genai.types as types
 
 class ImageUtil:
+
+    IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp']
+
     @staticmethod
     def get_mime_type(file_path: str) -> str:
         """Helper method to determine the MIME type based on the file extension."""
@@ -29,6 +32,14 @@ class ImageUtil:
                     data=img_file.read()
                 )
             )
+
+    @staticmethod
+    def read_images_from_file_paths(file_paths: list[str]) -> list[tuple[str, types.Part]]:
+        """Reads images from the specified files and returns their bytes."""
+        images = []
+        for file_path in file_paths:
+            images.append(ImageUtil.read_image(file_path))
+        return images
 
     @staticmethod
     def read_images_from_folder(folder_path: str) -> list[tuple[str, types.Part]]:

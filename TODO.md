@@ -72,3 +72,7 @@
 - `app/util/image.py` - Add method to save generated images from Gemini responses
 - `app/constants/agent_constants.py` - Add configuration for image generation model and toggle flag
 - `pyproject.toml` - Verify `google-genai` version supports image generation
+
+## 5. General improvements for exercises
+
+1. Improve lining exercises to use tables with three columns of distance between options.
