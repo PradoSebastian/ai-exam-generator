@@ -12,21 +12,31 @@ logging.basicConfig(level=logging.INFO)
 GEMINI_MODEL=os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 MODEL_TEMPERATURE=float(os.getenv("MODEL_TEMPERATURE", 0.7))
 INCLUDE_ANSWERS=os.getenv("INCLUDE_ANSWERS", "true").lower() == "true"
-IMAGE_ARTIFACTS_KEY="image_artifacts"
-
-FILES_PATH=os.getenv("FILES_PATH", "files")
-
-RESULTS_PATH=os.getenv("RESULTS_PATH", "results")
+FILES_PATH=os.getenv("FILES_PATH", "resources/input")
+RESULTS_PATH=os.getenv("RESULTS_PATH", "resources/output")
+CSV_IMAGE_FILE_PATH=f"{FILES_PATH}/" + os.getenv("CSV_IMAGE_FILE_PATH", "images.csv")
+CSV_CUSTOM_CHARACTERS_FILE_PATH=f"{FILES_PATH}/" + os.getenv("CSV_CUSTOM_CHARACTERS_FILE_PATH", "custom_characters.csv")
+CSV_SPECIAL_CONSIDERATIONS_FILE_PATH=f"{FILES_PATH}/" + os.getenv("CSV_SPECIAL_CONSIDERATIONS_FILE_PATH", "special_considerations.csv")
 
 APP_NAME="image_transformer_app"
 
 USER_ID="local_user"
 
-INCLUDE_ANSWERS_KEY="include_answers"
+GENERATED_FOLDER = "generated"
+GENERATED_DEFAULT_FILE_NAME = "resulted_markdown"
 
 # Output keys
 IMAGE_READER_OUTPUT_KEY="image_reader_output"
 EXAM_GENERATOR_OUTPUT_KEY="exam_generator_output"
+
+# Context Keys
+INCLUDE_ANSWERS_KEY="include_answers"
+IMAGE_ARTIFACTS_KEY="image_artifacts"
+IMAGE_REFERENCES_KEY="image_references"
+
+CUSTOM_CHARACTERS_KEY="custom_characters"
+MARKDOWN_ARTIFACTS_KEY="markdown_artifacts"
+SPECIAL_CONSIDERATIONS_KEY="special_considerations"
 
 # File names
 IMAGE_READER_OUTPUT_FILE_NAME="image_reader_output"

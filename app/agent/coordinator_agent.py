@@ -8,9 +8,15 @@ from google.adk.agents.invocation_context import InvocationContext
 from app.agent.exam_generator_agent import ExamGeneratorAgent
 from app.agent.image_reader_agent import ImageReaderAgent
 from app.constants.agent_constants import (
+    CSV_CUSTOM_CHARACTERS_FILE_PATH,
+    CSV_IMAGE_FILE_PATH,
+    CUSTOM_CHARACTERS_KEY,
     FILES_PATH,
-    IMAGE_READER_OUTPUT_KEY, 
+    IMAGE_READER_OUTPUT_FILE_NAME,
+    IMAGE_READER_OUTPUT_KEY,
+    IMAGE_REFERENCES_KEY, 
 )
+from app.util.csv import CSVUtil
 from app.util.path import PathUtil
 from app.util.image import ImageUtil
 from app.util.md import MarkdownUtil
@@ -68,11 +74,17 @@ class CoordinatorAgent(BaseAgent):
       self,
       ctx: InvocationContext,
     ) -> AsyncGenerator[Event, None] | None:
-
+        
+        # Step 0: Read files tree from input folder
         files_tree = PathUtil.read_files_tree_from_folder(
             folder_path=FILES_PATH, 
             types=ImageUtil.IMAGE_EXTENSIONS + [MarkdownUtil.EXTENSION]
         )
+        image_references = CSVUtil.read_two_column(CSV_IMAGE_FILE_PATH)
+        if image_references:
+            ctx.session.state[IMAGE_REFERENCES_KEY] = image_references
+
+        logger.info(f"Files tree read successfully: {files_tree}")
 
         # Step 1: Execute image reading agent per existingfolder
 
@@ -81,7 +93,7 @@ class CoordinatorAgent(BaseAgent):
         images_per_folder = self._filter_image_files(files_tree)
         for folder, image_files in images_per_folder.items():
             # Initialize image files
-            error_event = self.image_reader_agent._initialize_image_files(folder, image_files, ctx)
+            error_event = await self.image_reader_agent._initialize_image_files(folder, image_files, ctx)
             if error_event:
                 yield error_event
                 return
@@ -90,15 +102,23 @@ class CoordinatorAgent(BaseAgent):
             async for event in self.image_reader_agent.get_agent().run_async(ctx):
                 yield event
 
+            logger.info(f"Image reading agent executed successfully for folder {folder}")
+
             # Save generated markdown
-            generated_markdown_files.append(ctx.session.state.get(IMAGE_READER_OUTPUT_KEY))
+            generated_markdown_files.append(str(ctx.session.state.get(IMAGE_READER_OUTPUT_KEY)))
             # Clean image files
-            self.image_reader_agent._clean_image_files(ctx)
+            await self.image_reader_agent._clean_image_artifacts(ctx)
 
         # Step 2: Execute exam generator agent
 
         # Filter markdown files
         markdown_files = self._filter_markdown_files(files_tree)
-        
-            
-        return
+        error_event = await self.exam_generator_agent._initialize_image_files(markdown_files, generated_markdown_files, ctx)
+        if error_event:
+            yield error_event
+
+        # Execute image reading agent
+        async for event in self.exam_generator_agent.get_agent().run_async(ctx):
+            yield event
+
+        await self.exam_generator_agent._clean_image_artifacts(ctx)
