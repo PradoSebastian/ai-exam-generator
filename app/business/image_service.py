@@ -3,7 +3,7 @@ import logging
 import google.genai.types as types
 
 from app.agent.config.runner import AgentRunner
-from app.agent.image_reader_agent import ImageReaderAgent, image_reader_agent
+from app.agent.image_reader_agent import ImageReaderAgent
 from app.constants.agent_constants import FILES_PATH, USER_ID
 from app.util.image import ImageUtil
 from app.util.md import MarkdownUtil
@@ -49,5 +49,3 @@ class ImageService:
             MarkdownUtil.create_markdown_file(text=final_response_text)
         else:
             logger.warning("No final response received from the agent.")
-
-image_service = ImageService(image_reader_agent)
