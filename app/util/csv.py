@@ -1,9 +1,8 @@
 import csv
 import logging
 
-import google.genai.types as types
-
 from app.util.file import FileUtil
+from app.util.path import PathUtil
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +13,8 @@ class CSVUtil:
         """Reads the image references from the CSV file."""
         results = {}
         try:
-            bytes = FileUtil.read_file(file_path)
-            reader = csv.reader(bytes.decode('utf-8').splitlines())
+            bytes = FileUtil.read_file(PathUtil.get_full_path(file_path))
+            reader = csv.reader(bytes.decode('utf-8').splitlines(), delimiter=';')
             for row in reader:
                 if len(row) >= 2:
                     name, content = row[0], row[1]

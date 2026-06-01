@@ -4,7 +4,7 @@ import uuid
 from google.adk.sessions import BaseSessionService, InMemorySessionService
 from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
 from google.adk.runners import Runner
-from google.adk.agents.llm_agent import LlmAgent
+from google.adk.agents.base_agent import BaseAgent
 
 from app.constants.agent_constants import (
     APP_NAME, 
@@ -14,7 +14,6 @@ from app.constants.agent_constants import (
     CONTEXT_CACHE_CONFIG, 
     USER_ID, 
 )
-from app.agent.image_reader_agent import image_reader_agent
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class AgentRunner:
     artifact_service: BaseArtifactService
     runner: Runner
 
-    def __init__(self, root_agent: LlmAgent):
+    def __init__(self, root_agent: BaseAgent):
         self.session_service = InMemorySessionService()
         self.artifact_service = InMemoryArtifactService()
         self.runner = Runner(
@@ -54,5 +53,3 @@ class AgentRunner:
     def get_runner(self) -> Runner:
         """Returns the runner instance."""
         return self.runner
-    
-#runner = AgentRunner(image_reader_agent.get_agent())

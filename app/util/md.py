@@ -1,5 +1,5 @@
-from datetime import date
 import logging
+from datetime import date
 
 from app.constants.agent_constants import RESULTS_PATH
 from app.util.path import PathUtil

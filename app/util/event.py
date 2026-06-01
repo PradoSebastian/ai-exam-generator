@@ -7,6 +7,7 @@ class EventUtil:
     @staticmethod
     def create_error_event(message: str) -> Event:
         return Event(
+            author="system",
             content=types.Content(
                 role="user",
                 parts=[types.Part(text=message)]

@@ -6,6 +6,12 @@ import google.genai.types as types
 class FileUtil:
 
     @staticmethod
+    def read_str_file(path: str) -> str:
+        """Reads a file from the specified path and returns its content as a string."""
+        with open(path, 'r') as file:
+            return file.read()
+
+    @staticmethod
     def read_file(path: str) -> bytes:
         """Reads a file from the specified path and returns its bytes."""
         with open(path, 'rb') as file:

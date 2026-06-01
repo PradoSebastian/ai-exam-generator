@@ -1,9 +1,10 @@
 import logging
 
-from google.adk.agents.invocation_context import InvocationContext
 import google.genai.types as types
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.models.llm_request import LlmRequest
 
-from app.constants.agent_constants import IMAGE_ARTIFACTS_KEY
 from app.util.file import FileUtil
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class ArtifactUtil:
         """Saves an artifact to the specified path."""
         try:
             if isinstance(file_path, str):
+                logger.info(f"Reading file from path: {file_path}")
                 bytes = FileUtil.read_file(file_path)
                 file_name = file_path.split('/')[-1]
             else:
@@ -70,8 +72,8 @@ class ArtifactUtil:
         """Saves the artifacts to the session state."""
         counter = 0
         for file_path, mime_type in file_paths:
-            default_name = f"{default_name}_{counter}.md" if default_name else None
-            if not ArtifactUtil.save_artifact(file_path, mime_type, ctx_key, ctx, folder, default_name):
+            default_name = f"{default_name}_{counter}" if default_name else None
+            if not await ArtifactUtil.save_artifact(file_path, mime_type, ctx_key, ctx, folder, default_name):
                 logger.error(f"Error saving artifact: {file_path}")
                 await ArtifactUtil.clean_artifacts(ctx_key, ctx)
                 return False
@@ -92,3 +94,25 @@ class ArtifactUtil:
                 session_id=ctx.session.id
             )
         ctx.session.state.pop(ctx_key, None)
+
+    @staticmethod
+    async def load_artifacts(
+        callback_context: CallbackContext,
+        llm_request: LlmRequest,
+        artifact_names: list[str]
+    ) -> None:
+        for artifact_name in artifact_names:
+            artifact = await callback_context.load_artifact(filename=artifact_name)
+            if artifact and isinstance(artifact, types.Part):
+                llm_request.contents.append(
+                    types.Content(
+                        role='user',
+                        parts=[
+                            types.Part.from_text(
+                                text=f'Artifact {artifact_name} is:'
+                            ),
+                            artifact,
+                        ],
+                    )
+                )
+

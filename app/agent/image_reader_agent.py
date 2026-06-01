@@ -5,6 +5,8 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.llm_agent import LlmAgent
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event
+from google.adk.models.llm_response import LlmResponse
+from google.adk.models.llm_request import LlmRequest
 from google.genai import types
 
 from app.agent.prompt.image_reader_prompt import IMAGE_READER_PROMPT
@@ -16,9 +18,10 @@ from app.constants.agent_constants import (
     IMAGE_REFERENCES_KEY,
     GEMINI_MODEL
 )
-from app.util.md import MarkdownUtil
 from app.util.artifact import ArtifactUtil
 from app.util.event import EventUtil
+from app.util.md import MarkdownUtil
+from app.util.pdf import PDFUtil
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +44,18 @@ class ImageReaderAgent:
             3. INCLUDE_ANSWERS: {{{INCLUDE_ANSWERS_KEY}}}
             """,
             output_key=IMAGE_READER_OUTPUT_KEY,
-            after_agent_callback = self.__class__.save_markdown_after_agent
+            before_model_callback=self.__class__.inject_image_artifacts,
+            after_agent_callback = self.__class__.save_markdown_after_agent,
         )
+
+    @staticmethod
+    async def inject_image_artifacts(
+        callback_context: CallbackContext, llm_request: LlmRequest
+    ) -> Optional[LlmResponse]:
+        """Callback hook to append image binary bytes straight into the chat context."""
+        image_artifacts = callback_context.state.get(IMAGE_ARTIFACTS_KEY, [])
+        await ArtifactUtil.load_artifacts(callback_context, llm_request, image_artifacts)
+        return None
 
     @staticmethod
     def save_markdown_after_agent(callback_context: CallbackContext) -> Optional[types.Content]:
@@ -51,6 +64,7 @@ class ImageReaderAgent:
 
         if generated_markdown:
             MarkdownUtil.create_markdown_file(text=generated_markdown, file_name=file_name)
+            PDFUtil.create_pdf_file(text=generated_markdown, file_name=file_name)
         
         return None
 
@@ -65,11 +79,19 @@ class ImageReaderAgent:
             logger.error(f"No image files found in {folder}")
             return EventUtil.create_error_event(f"No image files found in {folder}")
 
-        if not await ArtifactUtil.save_artifacts(image_files, IMAGE_ARTIFACTS_KEY, ctx):
+        if not await ArtifactUtil.save_artifacts(
+            file_paths=image_files,
+            ctx_key=IMAGE_ARTIFACTS_KEY, 
+            ctx=ctx,
+            default_name="images"):
             logger.error(f"Error saving artifacts: {image_files}")
             return EventUtil.create_error_event(f"Error saving artifacts: {image_files}")
         
-        ctx.session.state[IMAGE_READER_OUTPUT_FILE_NAME] = f"{folder}_{IMAGE_READER_OUTPUT_FILE_NAME}" if folder else IMAGE_READER_OUTPUT_FILE_NAME
+        ctx.session.state[IMAGE_READER_OUTPUT_FILE_NAME] = (
+            f"{folder}_{IMAGE_READER_OUTPUT_FILE_NAME}" 
+            if folder 
+            else IMAGE_READER_OUTPUT_FILE_NAME
+        )
         
     async def _clean_image_artifacts(self, ctx: InvocationContext) -> None:
         ctx.session.state.pop(IMAGE_READER_OUTPUT_FILE_NAME, None)
@@ -77,7 +99,4 @@ class ImageReaderAgent:
 
     def get_agent(self) -> LlmAgent:
         return self.image_reader_llm_agent
-
-    
-image_reader_agent = ImageReaderAgent()
         
